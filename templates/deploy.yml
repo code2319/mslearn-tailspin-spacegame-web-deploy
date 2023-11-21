@@ -1,0 +1,36 @@
+variables:
+  # define which configuration to build
+  buildConfiguration: 'Release'
+  # define the name of your release branch
+  releaseBranchName: 'release'
+
+- stage: '${{ parameters.buildConfiguration }}'
+  displayName: 'Deploy to the ${{ parameters.buildConfiguration }} environment'
+  dependsOn: ${{ parameters.DependsOn }}
+  # run the Dev stage only when the previous stage succeeds and the current branch is release
+  #condition: |
+  #  and
+  #  (
+  #    succeeded(),
+  #    eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
+  #  )
+  jobs:
+  - deployment: Deploy
+    pool:
+      vmImage: 'ubuntu-20.04'
+    environment: ${{ parameters.environmentConfiguration }}
+    variables:
+    - group: Release
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Azure App Service Deploy: website'
+            inputs:
+              azureSubscription: 'Resource Manager - Tailspin - Space Game'
+              # deploy to the App Service instance that's associated with the Dev environment
+              appName: ${{ parameters.appNameConfiguration }} 
+              package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'

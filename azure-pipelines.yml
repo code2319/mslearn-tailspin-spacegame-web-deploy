@@ -79,84 +79,23 @@ stages:
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
 
-- stage: 'Dev'
-  displayName: 'Deploy to the dev environment'
-  dependsOn: Build
-  # run the stage only when the previous stage succeeds and the current branch is release
-  condition: |
-    and
-    (
-      succeeded(),
-      eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
-    )
-  jobs:
-  - deployment: Deploy
-    pool:
-      vmImage: 'ubuntu-20.04'
-    environment: dev
-    variables:
-    - group: Release
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: drop
-          - task: AzureWebApp@1
-            displayName: 'Azure App Service Deploy: website'
-            inputs:
-              azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              # deploy to the App Service instance that's associated with the Dev environment
-              appName: '$(WebAppNameDev)'
-              package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+- template: templates/build.yml
+  parameters:
+    DependsOn: 'Build'
+    buildConfiguration: 'Dev'
+    environmentConfiguration: 'Dev'
+    appNameConfiguration: '$(WebAppNameDev)'
 
-# runs the stage only when the build reason equals Schedule
-# (The built-in variable Build.Reason defines the build reason.)
-# But this condition is shown for learning purposes. 
-# It's commented to enable the change to go from Dev to Test without waiting for the schedule to be triggered.
-- stage: 'Test'
-  displayName: 'Deploy to the test environment'
-  dependsOn: Dev
-  #condition: eq(variables['Build.Reason'], 'Schedule')
-  jobs:
-  - deployment: Deploy
-    pool:
-      vmImage: 'ubuntu-20.04'
-    environment: test
-    variables:
-    - group: 'Release'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: drop
-          - task: AzureWebApp@1
-            displayName: 'Azure App Service Deploy: website'
-            inputs:
-              azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppNameTest)'
-              package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+- template: templates/build.yml
+  parameters:
+    DependsOn: 'Dev'
+    buildConfiguration: 'Test'
+    environmentConfiguration: 'Test'
+    appNameConfiguration: '$(WebAppNameTest)'
 
-- stage: 'Staging'
-  displayName: 'Deploy to the staging environment'
-  dependsOn: Test
-  jobs:
-  - deployment: Deploy
-    pool:
-      vmImage: 'ubuntu-20.04'
-    environment: staging
-    variables:
-    - group: 'Release'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: drop
-          - task: AzureWebApp@1
-            displayName: 'Azure App Service Deploy: website'
-            inputs:
-              azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppNameStaging)'
-              package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+- template: templates/build.yml
+  parameters:
+    DependsOn: 'Test'
+    buildConfiguration: 'Staging'
+    environmentConfiguration: 'Staging'
+    appNameConfiguration: '$(WebAppNameStaging)'
