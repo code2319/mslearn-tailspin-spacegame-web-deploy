@@ -79,21 +79,21 @@ stages:
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
 
-- template: templates/build.yml
+- template: templates/deploy.yml
   parameters:
     DependsOn: 'Build'
     buildConfiguration: 'Dev'
     environmentConfiguration: 'Dev'
     appNameConfiguration: '$(WebAppNameDev)'
 
-- template: templates/build.yml
+- template: templates/deploy.yml
   parameters:
     DependsOn: 'Dev'
     buildConfiguration: 'Test'
     environmentConfiguration: 'Test'
     appNameConfiguration: '$(WebAppNameTest)'
 
-- template: templates/build.yml
+- template: templates/deploy.yml
   parameters:
     DependsOn: 'Test'
     buildConfiguration: 'Staging'
