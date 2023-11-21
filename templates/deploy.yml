@@ -1,9 +1,3 @@
-variables:
-  # define which configuration to build
-  buildConfiguration: 'Release'
-  # define the name of your release branch
-  releaseBranchName: 'release'
-
 - stage: '${{ parameters.buildConfiguration }}'
   displayName: 'Deploy to the ${{ parameters.buildConfiguration }} environment'
   dependsOn: ${{ parameters.DependsOn }}
