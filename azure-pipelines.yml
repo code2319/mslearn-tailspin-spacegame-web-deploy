@@ -7,6 +7,17 @@ variables:
   # define the name of your release branch
   releaseBranchName: 'release'
 
+# triggers the pipeline to run against the release branch at 3 A.M. each day. 
+# The always flag is set to false so that the pipeline runs only when 
+# the release branch contains changes from the prior run.
+schedules:
+- cron: '0 3 * * *'
+  displayName: 'Deploy every day at 3 A.M.'
+  branches:
+    include:
+    - release
+  always: false 
+
 stages:
 - stage: 'Build'
   displayName: 'Build the web application'
@@ -97,4 +108,32 @@ stages:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
               # deploy to the App Service instance that's associated with the Dev environment
               appName: '$(WebAppNameDev)'
+              package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+
+# runs the stage only when the build reason equals Schedule
+# (The built-in variable Build.Reason defines the build reason.)
+# But this condition is shown for learning purposes. 
+# It's commented to enable the change to go from Dev to Test without waiting for the schedule to be triggered.
+- stage: 'Test'
+  displayName: 'Deploy to the test environment'
+  dependsOn: Dev
+  #condition: eq(variables['Build.Reason'], 'Schedule')
+  jobs:
+  - deployment: Deploy
+    pool:
+      vmImage: 'ubuntu-20.04'
+    environment: test
+    variables:
+    - group: 'Release'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Azure App Service Deploy: website'
+            inputs:
+              azureSubscription: 'Resource Manager - Tailspin - Space Game'
+              appName: '$(WebAppNameTest)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
