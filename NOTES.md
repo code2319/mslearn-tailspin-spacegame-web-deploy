@@ -176,3 +176,4 @@ $ az webapp deployment slot list --name $staging --resource-group tailspin-space
 ```
 
 > ! By default, a deployment slot is accessible from the internet. In practice, you could configure an Azure virtual network that places your swap slot in a network that's not routable from the internet but that only your team can access. Your production slot would remain reachable from the internet.
+
