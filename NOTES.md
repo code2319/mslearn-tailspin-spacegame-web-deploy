@@ -152,3 +152,27 @@ As an optional step, after the previous command finishes, run the following az g
 ```
 az group list --output table
 ```
+
+# Implement the blue-green deployment pattern
+
+Run the following command to get the name of the App Service instance that corresponds to Staging and to store the result in a Bash variable that's named staging:
+```
+$ staging=$(az webapp list --resource-group tailspin-space-game-rg --query "[?contains(@.name, 'tailspin-space-game-web-staging')].{name: name}" --output tsv)
+```
+
+The --query argument uses [JMESPath](http://jmespath.org/), which is a query language for JSON. The argument selects the App Service instance whose name field contains "tailspin-space-game-web-staging".
+
+Run the following command to add a slot named swap to your staging environment.
+```
+$ az webapp deployment slot create \
+  --name $staging \
+  --resource-group tailspin-space-game-rg \
+  --slot swap
+```
+
+Run the following command to list your deployment slot's host name.
+```
+$ az webapp deployment slot list --name $staging --resource-group tailspin-space-game-rg --query [].hostNames --output tsv
+```
+
+> ! By default, a deployment slot is accessible from the internet. In practice, you could configure an Azure virtual network that places your swap slot in a network that's not routable from the internet but that only your team can access. Your production slot would remain reachable from the internet.
