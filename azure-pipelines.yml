@@ -2,7 +2,10 @@ trigger:
 - '*'
 
 variables:
+  # define which configuration to build
   buildConfiguration: 'Release'
+  # define the name of your release branch
+  releaseBranchName: 'release'
 
 stages:
 - stage: 'Build'
@@ -65,9 +68,16 @@ stages:
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
 
-- stage: 'Deploy'
-  displayName: 'Deploy the web application'
+- stage: 'Dev'
+  displayName: 'Deploy to the dev environment'
   dependsOn: Build
+  # run the stage only when the previous stage succeeds and the current branch is release
+  condition: |
+    and
+    (
+      succeeded(),
+      eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
+    )
   jobs:
   - deployment: Deploy
     pool:
@@ -85,5 +95,6 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppName)'
+              # deploy to the App Service instance that's associated with the Dev environment
+              appName: '$(WebAppNameDev)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
